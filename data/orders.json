@@ -1,0 +1,36 @@
+{
+    "order_mock_ae993313d017": {
+        "session_id": "test_pay_session",
+        "amount_rupees": 100.0,
+        "amount_paise": 10000,
+        "receipt": "receipt_1d5a4e2d86",
+        "status": "paid",
+        "items": [],
+        "is_mock": true,
+        "order_id": "order_mock_ae993313d017",
+        "payment_id": "pay_mock_123"
+    },
+    "order_real_123": {
+        "session_id": "test_session",
+        "is_mock": false,
+        "status": "paid",
+        "payment_id": "pay_real_456"
+    },
+    "order_web_123": {
+        "session_id": "web_session",
+        "is_mock": true,
+        "status": "paid",
+        "payment_id": "pay_web_abc"
+    },
+    "order_mock_d38dbb913455": {
+        "session_id": "test_pay_session",
+        "amount_rupees": 100.0,
+        "amount_paise": 10000,
+        "receipt": "receipt_e2b09ead53",
+        "status": "paid",
+        "items": [],
+        "is_mock": true,
+        "order_id": "order_mock_d38dbb913455",
+        "payment_id": "pay_mock_123"
+    }
+}

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Checkout | AgentForge Commerce</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f0f12;
+            --card-bg: rgba(26, 26, 36, 0.45);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --accent-primary: #1f8ef1;
+            --accent-secondary: #00f2fe;
+            --text-color: #f1f2f6;
+            --text-muted: #8b9bb4;
+            --success-color: #00f2c3;
+            --error-color: #fd5d93;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 10% 20%, rgba(31, 142, 241, 0.15) 0%, transparent 40%),
+                              radial-gradient(circle at 90% 80%, rgba(0, 242, 254, 0.15) 0%, transparent 40%);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .checkout-container {
+            max-width: 520px;
+            width: 100%;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+
+        .order-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .order-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 15px;
+        }
+
+        .order-row:last-child {
+            margin-bottom: 0;
+            border-top: 1px solid var(--border-color);
+            padding-top: 16px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .label {
+            color: var(--text-muted);
+        }
+
+        .value {
+            color: var(--text-color);
+        }
+
+        .total-value {
+            color: var(--accent-secondary);
+        }
+
+        .status-box {
+            margin: 20px 0;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .status-box.success {
+            display: block;
+            background: rgba(0, 242, 195, 0.1);
+            border: 1px solid var(--success-color);
+            color: var(--success-color);
+        }
+
+        .status-box.error {
+            display: block;
+            background: rgba(253, 93, 147, 0.1);
+            border: 1px solid var(--error-color);
+            color: var(--error-color);
+        }
+
+        .status-box.warning {
+            display: block;
+            background: rgba(255, 178, 54, 0.1);
+            border: 1px solid #ffb236;
+            color: #ffb236;
+        }
+
+        .btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border: none;
+            outline: none;
+            color: #0f0f12;
+            padding: 16px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(31, 142, 241, 0.4);
+            margin-bottom: 12px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 242, 254, 0.6);
+        }
+
+        .btn-fail {
+            background: transparent;
+            border: 1px solid var(--error-color);
+            color: var(--error-color);
+            box-shadow: none;
+        }
+
+        .btn-fail:hover {
+            background: rgba(253, 93, 147, 0.1);
+            box-shadow: 0 4px 12px rgba(253, 93, 147, 0.2);
+        }
+
+        .footer {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 24px;
+        }
+
+        .sandbox-controls {
+            margin-top: 20px;
+            border-top: 1px dashed var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="checkout-container">
+    <div class="header">
+        <div class="logo">AgentForge Commerce</div>
+        <div class="subtitle">SECURE CHECKOUT GATEWAY</div>
+    </div>
+
+    <!-- Warning / Sandbox Notice -->
+    {% if is_mock %}
+    <div class="status-box warning">
+        ⚠️ <strong>Sandbox Simulation Mode</strong><br>
+        Razorpay credentials are not configured in the environment. You can test success and failure checkout flows using the buttons below.
+    </div>
+    {% endif %}
+
+    <div class="order-card">
+        <div class="order-row">
+            <span class="label">Order ID</span>
+            <span class="value" id="order-id">{{ order_id }}</span>
+        </div>
+        <div class="order-row">
+            <span class="label">Session ID</span>
+            <span class="value">{{ session_id }}</span>
+        </div>
+        <div class="order-row">
+            <span class="label">Status</span>
+            <span class="value" id="current-status">{{ status|upper }}</span>
+        </div>
+        <div class="order-row">
+            <span class="label">Amount Payable</span>
+            <span class="value total-value">₹{{ amount_rupees }}</span>
+        </div>
+    </div>
+
+    <div id="status-container"></div>
+
+    <div class="actions">
+        {% if not is_mock %}
+            <button class="btn" id="pay-btn">Proceed to Pay (₹{{ amount_rupees }})</button>
+        {% else %}
+            <div class="sandbox-controls">
+                <button class="btn" id="sim-success-btn">Simulate Success Payment</button>
+                <button class="btn btn-fail" id="sim-fail-btn">Simulate Failure Payment</button>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="footer">
+        🔒 SSL Secured standard checkout by Razorpay API. Real money transactions disabled.
+    </div>
+</div>
+
+{% if not is_mock %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+    document.getElementById("pay-btn").onclick = function(e) {
+        var options = {
+            "key": "{{ key_id }}",
+            "amount": "{{ amount_paise }}",
+            "currency": "{{ currency }}",
+            "name": "AgentForge Commerce",
+            "description": "Standard Test Payment",
+            "order_id": "{{ order_id }}",
+            "handler": function (response) {
+                document.getElementById("status-container").innerHTML = "<div class='status-box warning'>Processing verification...</div>";
+                fetch('/api/payment/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        razorpay_order_id: response.razorpay_order_id,
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        razorpay_signature: response.razorpay_signature
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById("status-container").innerHTML = "<div class='status-box success'>🎉 Payment Successful! You can close this tab and return to the chat assistant.</div>";
+                        document.getElementById("current-status").innerText = "PAID";
+                        document.getElementById("pay-btn").style.display = "none";
+                    } else {
+                        document.getElementById("status-container").innerHTML = "<div class='status-box error'>❌ Signature verification failed. Potential fraud attempt blocked.</div>";
+                    }
+                })
+                .catch(err => {
+                    document.getElementById("status-container").innerHTML = "<div class='status-box error'>Error: " + err + "</div>";
+                });
+            },
+            "prefill": {
+                "name": "Demo Shopper",
+                "email": "shopper@agentforge.com"
+            },
+            "theme": {
+                "color": "#1f8ef1"
+            }
+        };
+        var rzp = new Razorpay(options);
+        rzp.on('payment.failed', function (response){
+            document.getElementById("status-container").innerHTML = "<div class='status-box error'>❌ Payment Failed! Reason: " + response.error.description + "</div>";
+        });
+        rzp.open();
+        e.preventDefault();
+    }
+</script>
+{% else %}
+<script>
+    // Success simulation
+    document.getElementById("sim-success-btn").onclick = function() {
+        document.getElementById("status-container").innerHTML = "<div class='status-box warning'>Processing mock verification...</div>";
+        
+        fetch('/api/payment/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                razorpay_order_id: "{{ order_id }}",
+                razorpay_payment_id: "pay_mock_" + Math.random().toString(36).substring(7),
+                razorpay_signature: "mock_signature_success"
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById("status-container").innerHTML = "<div class='status-box success'>🎉 Simulated Success! Payment registered. You can close this tab and return to the assistant.</div>";
+                document.getElementById("current-status").innerText = "PAID";
+                document.querySelector(".sandbox-controls").style.display = "none";
+            } else {
+                document.getElementById("status-container").innerHTML = "<div class='status-box error'>❌ Simulated verification failed.</div>";
+            }
+        })
+        .catch(err => {
+            document.getElementById("status-container").innerHTML = "<div class='status-box error'>Error: " + err + "</div>";
+        });
+    };
+
+    // Failure simulation
+    document.getElementById("sim-fail-btn").onclick = function() {
+        document.getElementById("status-container").innerHTML = "<div class='status-box warning'>Simulating failure...</div>";
+        
+        fetch('/api/payment/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                razorpay_order_id: "{{ order_id }}",
+                razorpay_payment_id: "pay_mock_failed",
+                razorpay_signature: "mock_signature_fail"
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById("status-container").innerHTML = "<div class='status-box error'>❌ Payment Failed. Your cart has been preserved. Please return to the chat assistant.</div>";
+            document.getElementById("current-status").innerText = "FAILED";
+        });
+    };
+</script>
+{% endif %}
+
+</body>
+</html>

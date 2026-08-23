@@ -1,0 +1,71 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+
+# Virtual envs
+.venv/
+venv/
+
+# Env files
+.env
+uploaded_document.pdf
+uploaded_doc_embeddings.json
+user_profile.json
+learning.doc
+
+# Pytest / coverage
+.pytest_cache/
+htmlcov/
+
+# Build / packaging
+build/
+dist/
+*.egg-info/
+
+# Mypy
+.mypy_cache/
+
+# IDEs / editors
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Notebook
+.ipynb_checkpoints/
+
+
+# Python
+__pycache__/
+*.pyc
+
+# Virtual Environment
+.venv/
+venv/
+
+# ChromaDB
+chroma_db/
+research_db/
+agent_memory_db/
+
+# SQLite
+*.sqlite3
+
+# Temporary Audio Files
+*.wav
+*.mp3
+
+# Uploaded Files
+uploaded_resume.pdf
+uploaded_document.pdf
+
+# Environment Variables
+.env
+
+# VSCode
+.vscode/
