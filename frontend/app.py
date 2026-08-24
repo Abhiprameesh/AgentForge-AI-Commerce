@@ -319,7 +319,7 @@ if view_mode == "🛍️ Shopper Experience":
                     unsafe_allow_html=True
                 )
                 # Remove item button
-                if st.button("🗑️ Remove", key=f"rem_{item['product_id']}", small=True):
+                if st.button("🗑️ Remove", key=f"rem_{item['product_id']}"):
                     requests.delete(f"{BACKEND_URL}/api/cart/{st.session_state.session_id}/items/{item['product_id']}")
                     st.rerun()
             

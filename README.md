@@ -211,6 +211,36 @@ streamlit run app.py
 
 ---
 
+## 📖 Local Demo & Usage Guide
+
+To test the application end-to-end, follow the guides below based on your configuration.
+
+### Option A: Local Sandbox Simulation Mode (No Configuration Needed)
+If you left the `RAZORPAY_` keys empty in your `.env`, follow this flow:
+1.  **Search & Recommend:** Open the Streamlit portal ([http://localhost:8501](http://localhost:8501)). In the chat box, type: *"I need a mechanical keyboard under ₹6000."* The agent will recommend a product and render product cards.
+2.  **Add to Cart:** Click **Add to Cart** on a product card. Note the right panel cart details updating.
+3.  **Accept Upsell:** The agent will contextually offer a compatible item (e.g. *KeyCraft Palm Rest* for ₹749). Click Add to Cart to accept the cross-sell.
+4.  **Checkout:** Click **📝 Initialize Checkout** in the cart panel.
+5.  **Simulate Payment:** Click **👉 Open Payment Gateway**. This opens a local browser tab pointing to your backend checkout page showing a yellow banner stating **"Sandbox Simulation Mode"**. Click **Simulate Success Payment**.
+6.  **Verify Metrics:** Close the tab, return to Streamlit, and click **🔄 Verify Payment Status**. Switch portal views to the **📊 Merchant Dashboard** to see total revenue, conversion rates, and the live transaction logs update dynamically.
+
+### Option B: Real Razorpay Test Mode (Webhook & Ngrok setup)
+If you configured `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` in your `.env`:
+1.  **Expose Port 8000:** Open a new terminal and expose your backend using ngrok:
+    ```bash
+    ngrok http 8000
+    ```
+    Copy the forwarding HTTPS URL (e.g., `https://xxxx.ngrok-free.app`).
+2.  **Configure Razorpay Webhook:**
+    - Log in to your [Razorpay Dashboard](https://dashboard.razorpay.com/) (Test Mode).
+    - Go to **Account & Settings** -> **Webhooks** -> **Add New Webhook**.
+    - Set the **Webhook URL** to `https://xxxx.ngrok-free.app/api/webhooks/razorpay`.
+    - Choose any secret password and set `RAZORPAY_WEBHOOK_SECRET=your_password` in your `.env`.
+    - Enable the **`order.paid`** active event and save.
+3.  **Perform Test Payment:** Initialize checkout in Streamlit, open the payment gateway, click **Proceed to Pay**, use the standard Razorpay Test Modal to complete the payment, and observe the webhook dynamically trigger and verify the order!
+
+---
+
 ## 🧪 Testing & Evaluation
 
 ### Running Unit Tests

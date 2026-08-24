@@ -45,6 +45,20 @@ def get_all_products() -> list[dict]:
     """Return all products in the catalog."""
     return list(_products_cache.values())
 
+def normalize_category(cat: str) -> str:
+    cat_lower = cat.lower().strip()
+    if cat_lower in ["skincare", "beauty", "makeup", "cosmetics", "face", "haircare"]:
+        return "beauty"
+    if cat_lower in ["fashion", "clothing", "apparel", "shoes", "running shoes", "tshirt", "hoodie", "socks"]:
+        return "fashion"
+    if cat_lower in ["electronics", "gadgets", "audio", "keyboard", "headphones", "smartwatch", "charger"]:
+        return "electronics"
+    if cat_lower in ["home", "decor", "kitchen", "furniture", "diffuser", "smart mug", "pillow"]:
+        return "home"
+    if cat_lower in ["fitness", "gym", "workout", "sports", "yoga", "mat", "weights", "dumbbells"]:
+        return "fitness"
+    return cat_lower
+
 def search_products(query: str, limit: int = 4, category: str | None = None, max_price: float | None = None) -> list[dict]:
     """
     Search catalog using ChromaDB for semantic retrieval.
@@ -80,10 +94,14 @@ def search_products(query: str, limit: int = 4, category: str | None = None, max
     filtered_results = []
     for prod in results:
         # Category Filter
-        if category and category.lower() != "all" and prod["category"].lower() != category.lower():
-            continue
-        # Max Price Filter
-        if max_price is not None and prod["price"] > max_price:
+        if category and category.lower() != "all":
+            norm_filter_cat = normalize_category(category)
+            norm_prod_cat = normalize_category(prod["category"])
+            if norm_prod_cat != norm_filter_cat:
+                continue
+        # Max Price Filter (check final discounted price)
+        actual_price = prod["price"] - prod.get("discount", 0)
+        if max_price is not None and actual_price > max_price:
             continue
         filtered_results.append(prod)
 

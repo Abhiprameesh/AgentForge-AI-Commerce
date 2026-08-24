@@ -1,4 +1,13 @@
 {
     "test_cart_session": {},
-    "web_session": {}
+    "web_session": {},
+    "session_1787495832": {
+        "beau_001": 2,
+        "beau_004": 2
+    },
+    "session_1787500467": {
+        "elec_007": 2,
+        "elec_010": 2
+    },
+    "session_1787558163": {}
 }

@@ -32,5 +32,37 @@
         "is_mock": true,
         "order_id": "order_mock_d38dbb913455",
         "payment_id": "pay_mock_123"
+    },
+    "order_mock_341816110ce3": {
+        "session_id": "session_1787558163",
+        "amount_rupees": 4196.0,
+        "amount_paise": 419600,
+        "receipt": "receipt_dfc7fff3cc",
+        "status": "paid",
+        "items": [
+            {
+                "product_id": "elec_007",
+                "name": "KeyCraft Memory Foam Palm Rest",
+                "price": 799.0,
+                "quantity": 2,
+                "subtotal": 1598.0,
+                "discount": 100.0,
+                "total": 1498.0,
+                "image": "https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=500&auto=format&fit=crop&q=60"
+            },
+            {
+                "product_id": "elec_010",
+                "name": "BrightLite Desktop LED Ring Light",
+                "price": 1499.0,
+                "quantity": 2,
+                "subtotal": 2998.0,
+                "discount": 300.0,
+                "total": 2698.0,
+                "image": "https://images.unsplash.com/photo-1590608897129-79da98d15969?w=500&auto=format&fit=crop&q=60"
+            }
+        ],
+        "is_mock": true,
+        "order_id": "order_mock_341816110ce3",
+        "payment_id": "pay_mock_3wtlqp"
     }
 }
