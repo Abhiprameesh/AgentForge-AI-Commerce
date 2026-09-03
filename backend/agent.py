@@ -24,11 +24,33 @@ tools = [
     analyze_resume
 ]
 
+import hashlib
+
 class DirectGeminiClient:
     def __init__(self, api_key: str, model: str = "gemini-3.6-flash"):
         self.api_key = api_key
         self.model = model
+        self.cache_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "llm_cache.json")
+        self.cache = {}
+        self._load_cache()
         
+    def _load_cache(self):
+        try:
+            if os.path.exists(self.cache_path):
+                with open(self.cache_path, "r", encoding="utf-8") as f:
+                    self.cache = json.load(f)
+        except Exception as e:
+            print(f"Error loading LLM cache: {e}")
+            self.cache = {}
+
+    def _save_cache(self):
+        try:
+            os.makedirs(os.path.dirname(self.cache_path), exist_ok=True)
+            with open(self.cache_path, "w", encoding="utf-8") as f:
+                json.dump(self.cache, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"Error saving LLM cache: {e}")
+
     def _call_api(self, prompt_text: str, model_name: str) -> str:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
         headers = {
@@ -67,13 +89,28 @@ class DirectGeminiClient:
         else:
             prompt_text = str(prompt)
             
+        model_to_use = self.model
+        
+        # Check cache
+        cache_key = hashlib.sha256(f"{model_to_use}:{prompt_text}".encode("utf-8")).hexdigest()
+        if cache_key in self.cache:
+            text = self.cache[cache_key]
+            class MockResponse:
+                def __init__(self, content):
+                    self.content = content
+            return MockResponse(text)
+            
         retries = 6
         delay = 5.0
-        model_to_use = self.model
+        last_exception = None
         
         for i in range(retries):
             try:
                 text = self._call_api(prompt_text, model_to_use)
+                
+                # Update and save cache
+                self.cache[cache_key] = text
+                self._save_cache()
                 
                 # Mock LangChain response object
                 class MockResponse:
@@ -81,16 +118,12 @@ class DirectGeminiClient:
                         self.content = content
                 return MockResponse(text)
                 
-            except LookupError:
-                # Fallback to gemini-1.5-flash if the primary model is not found in the region
-                if model_to_use != "gemini-1.5-flash":
-                    print(f"\n⚠️ Model {model_to_use} not found. Falling back to gemini-1.5-flash...")
-                    model_to_use = "gemini-1.5-flash"
-                    continue
-                else:
-                    raise Exception("Fallback model gemini-1.5-flash not found.")
+            except LookupError as e:
+                # If model is genuinely not found or unavailable, raise lookup error
+                raise e
                     
             except Exception as e:
+                last_exception = e
                 err_str = str(e)
                 if "RESOURCE_EXHAUSTED" in err_str or "429" in err_str or "quota" in err_str.lower():
                     print(f"\n⚠️ Rate Limit hit. Retrying in {delay} seconds (Attempt {i+1}/{retries})...")
@@ -99,12 +132,9 @@ class DirectGeminiClient:
                 else:
                     raise e
                     
-        # Final fallback call
-        text = self._call_api(prompt_text, "gemini-1.5-flash")
-        class MockResponse:
-            def __init__(self, content):
-                self.content = content
-        return MockResponse(text)
+        if last_exception:
+            raise last_exception
+        raise Exception("Failed to invoke LLM after multiple attempts.")
 
 # Initialize global LLM client
 api_key = os.getenv("GOOGLE_API_KEY")

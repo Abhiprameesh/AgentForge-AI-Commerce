@@ -6,7 +6,9 @@ from agents.commerce_agents import (
     router_agent,
     intent_agent,
     recommendation_agent,
-    upsell_agent
+    upsell_agent,
+    router_intent_agent,
+    recommendation_upsell_agent
 )
 from services import catalog_service, cart_service, razorpay_service, audit_service
 
@@ -32,13 +34,15 @@ class AgentState(TypedDict):
 # NODES
 
 def router_node(state: AgentState):
-    """Classifies user intent."""
+    """Classifies user intent and extracts shopper requirements."""
     user_input = state["user_input"]
     history = state.get("conversation_history", [])
+    prev_shopper_intent = state.get("shopper_intent", {})
     
-    # Classify intent
-    result = router_agent(user_input, history)
+    # Run combined router and intent extraction
+    result = router_intent_agent(user_input, history, prev_shopper_intent)
     intent = result.get("intent", "general_question")
+    shopper_intent = result.get("shopper_intent", prev_shopper_intent)
     
     trace = state.get("agent_trace", [])
     trace = trace + ["Router Agent"]
@@ -47,7 +51,7 @@ def router_node(state: AgentState):
     audit_service.log_event(
         session_id=state["session_id"],
         agent="Router Agent",
-        action="classify_intent",
+        action="classify_intent_and_extract_shopper_intent",
         input_data=user_input,
         output_data=result
     )
@@ -55,6 +59,7 @@ def router_node(state: AgentState):
     return {
         "intent": intent,
         "selected_agent": intent,
+        "shopper_intent": shopper_intent,
         "agent_trace": trace
     }
 
@@ -63,10 +68,19 @@ def intent_node(state: AgentState):
     user_input = state["user_input"]
     prev_intent = state.get("shopper_intent", {})
     
-    # Extract intent
-    shopper_intent = intent_agent(user_input, prev_intent)
+    trace = state.get("agent_trace", [])
     
-    trace = state.get("agent_trace", []) + ["Shopper Intent Agent"]
+    # If the router node already extracted/merged the intent in this turn, reuse it.
+    if "Router Agent" in trace:
+        trace = trace + ["Shopper Intent Agent (Cached)"]
+        return {
+            "shopper_intent": prev_intent,
+            "agent_trace": trace
+        }
+        
+    # Fallback to direct agent if called independently
+    shopper_intent = intent_agent(user_input, prev_intent)
+    trace = trace + ["Shopper Intent Agent"]
     
     audit_service.log_event(
         session_id=state["session_id"],
@@ -120,14 +134,64 @@ def recommendation_node(state: AgentState):
     intent = state.get("shopper_intent", {})
     retrieved = state.get("retrieved_products", [])
     
-    rec_result = recommendation_agent(user_input, intent, retrieved)
+    # Gather potential upsell candidates deterministically
+    session_id = state["session_id"]
+    cart_data = cart_service.get_cart(session_id)
+    cart_ids = [item["product_id"] for item in cart_data.get("items", [])]
+    retrieved_ids = [p["product_id"] for p in retrieved]
+    active_ids = list(set(cart_ids + retrieved_ids))
+    
+    potential_upsell_candidates = []
+    for pid in active_ids:
+        prod = catalog_service.get_product(pid)
+        if prod and prod.get("complementary_products"):
+            for comp_id in prod["complementary_products"]:
+                comp_prod = catalog_service.get_product(comp_id)
+                if comp_prod and comp_prod["inventory"] > 0 and comp_id not in active_ids:
+                    if comp_prod not in potential_upsell_candidates:
+                        potential_upsell_candidates.append(comp_prod)
+                        
+    # Call combined recommendation & upsell agent
+    rec_result = recommendation_upsell_agent(
+        user_query=user_input,
+        shopper_intent=intent,
+        retrieved_products=retrieved,
+        potential_upsell_candidates=potential_upsell_candidates,
+        conversation_history=state.get("conversation_history", [])
+    )
+    
     explanation = rec_result.get("explanation", "")
     recs = rec_result.get("recommendations", [])
     
+    upsell_data = {}
+    if rec_result.get("suggest_upsell") and rec_result.get("upsell_product_id"):
+        pid = rec_result["upsell_product_id"]
+        pitch = rec_result["upsell_reason"]
+        
+        prod = catalog_service.get_product(pid)
+        if prod and prod["inventory"] > 0:
+            upsell_data = {
+                "product_id": pid,
+                "name": prod["name"],
+                "price": prod["price"],
+                "pitch": pitch
+            }
+            explanation = f"{explanation}\n\n💡 *Special Offer:* {pitch}"
+            
+            # Log upsell audit event
+            audit_service.log_event(
+                session_id=session_id,
+                agent="Upsell Agent",
+                action="pitch_upsell",
+                input_data=pid,
+                output_data=pitch
+            )
+            
     trace = state.get("agent_trace", []) + ["Recommendation Agent"]
     
+    # Log recommendation audit event
     audit_service.log_event(
-        session_id=state["session_id"],
+        session_id=session_id,
         agent="Recommendation Agent",
         action="rank_recommendations",
         input_data={"intent": intent, "retrieved_count": len(retrieved)},
@@ -137,19 +201,30 @@ def recommendation_node(state: AgentState):
     return {
         "recommendations": recs,
         "response": explanation,
+        "upsell": upsell_data,
         "agent_trace": trace
     }
 
 def upsell_node(state: AgentState):
     """Contextually pitches complementary products."""
     session_id = state["session_id"]
+    trace = state.get("agent_trace", [])
+    
+    # If the upsell was already pre-computed in recommendation_node during this turn, reuse it!
+    if "Recommendation Agent" in trace:
+        trace = trace + ["Upsell Agent (Cached)"]
+        return {
+            "agent_trace": trace
+        }
+        
+    # Otherwise, fall back to direct execution path (e.g. from cart node updates)
     cart_data = cart_service.get_cart(session_id)
     recs = state.get("recommendations", [])
     
     # Invoke upsell agent
     result = upsell_agent(cart_data.get("items", []), recs, state.get("conversation_history", []))
     
-    trace = state.get("agent_trace", []) + ["Upsell Agent"]
+    trace = trace + ["Upsell Agent"]
     response = state.get("response", "")
     
     upsell_data = {}
@@ -157,7 +232,6 @@ def upsell_node(state: AgentState):
         pid = result["product_id"]
         pitch = result["reason"]
         
-        # Verify compatibility and inventory one last time
         prod = catalog_service.get_product(pid)
         if prod and prod["inventory"] > 0:
             upsell_data = {
@@ -166,7 +240,6 @@ def upsell_node(state: AgentState):
                 "price": prod["price"],
                 "pitch": pitch
             }
-            # Append pitch to final response
             response = f"{response}\n\n💡 *Special Offer:* {pitch}"
             
             audit_service.log_event(
