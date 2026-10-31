@@ -1,6 +1,6 @@
 it s# AgentForge Commerce
 
-**AgentForge Commerce** is an agentic AI sales and checkout engine designed to convert natural-language buyer intent into a bounded, explainable purchase and checkout workflow. Built for the **Razorpay AI Buildathon 2026 (Track 1: AI Growth & Agentic Commerce)**, it demonstrates how modern merchants can become AI-readable and AI-transactable.
+**AgentForge Commerce** is an agentic AI sales and checkout engine designed to convert natural-language buyer intent into a bounded, explainable purchase and checkout workflow., it demonstrates how modern merchants can become AI-readable and AI-transactable.
 
 <div align="center">
 
